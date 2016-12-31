@@ -1,0 +1,50 @@
+#!/usr/bin/perl
+use strict;
+use Getopt::Long;
+
+our $ARG_NUM_USERS_MAX = 1;
+
+sub exitCritical {
+    printf("CRITICAL - %s\n", shift);
+    exit(2);
+}
+
+sub parseArguments {
+    GetOptions (
+        'num-users-max=i' => \$ARG_NUM_USERS_MAX
+    );
+
+    if ( $ARG_NUM_USERS_MAX !~ /^\d+$/ ) {
+        exitCritical('Argument is not a number');
+    }
+
+    if ( $ARG_NUM_USERS_MAX <= 0 ) {
+        exitCritical('Argument can\'t be below 1');
+    }
+}
+
+sub countLoggedInUsers {
+    my @woutput = `/usr/bin/w`;
+
+    if ( $? != 0 ) {
+        exitCritical('Was not able to run w');
+    }
+
+    return ( scalar(@woutput) - 2 );
+}
+
+sub main {
+    parseArguments();
+    my $numUsers = countLoggedInUsers();
+    my $message = sprintf('%d of %d users max are logged in', $numUsers,
+        $ARG_NUM_USERS_MAX);
+
+    if ( $numUsers < $ARG_NUM_USERS_MAX ) {
+        printf("OK - %s\n", $message);
+        exit(0);
+    }
+
+    exitCritical($message);
+}
+
+main();
